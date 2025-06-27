@@ -57,3 +57,5 @@ nunit-*.xml
 appsettings.Development.json
 
 launchSettings.json
+.editorconfig
+*.sln
