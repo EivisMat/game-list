@@ -5,6 +5,8 @@ public class GameList {
 
     public string Name { get; set; } = string.Empty;
 
+    public string Password { get; set; } = string.Empty;
+
     public DateTime CreationDate { get; set; } = DateTime.UtcNow;
 
     private readonly List<Game> _games = new();
