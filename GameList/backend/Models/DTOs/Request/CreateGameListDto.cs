@@ -5,7 +5,7 @@ public class CreateGameListDto {
 
     public string Password { get; set; } = string.Empty;
 
-    public List<CreateGameDto> Games { get; set; } = new();
+    public List<CreateNamedEntityDto> Games { get; set; } = new();
 
-    public List<CreatePersonDto> People { get; set; } = new();
+    public List<CreateNamedEntityDto> People { get; set; } = new();
 }
