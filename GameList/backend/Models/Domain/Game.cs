@@ -19,18 +19,22 @@ public class Game {
         Owners.Add(person.Id, false);
     }
 
-    public void RemoveOwner(Person person) {
-        if (!Owners.Remove(person.Id)) {
+    public void RemoveOwner(Guid personId) {
+        if (!Owners.Remove(personId)) {
             throw new InvalidOperationException("Person doesn't exist.");
         }
     }
 
-    public void SetOwner(Person person, bool IsOwner) {
-        if (Owners.ContainsKey(person.Id)) {
-            Owners[person.Id] = IsOwner;
+    public void SetOwner(Guid personId, bool isOwner) {
+        if (Owners.ContainsKey(personId)) {
+            Owners[personId] = isOwner;
         }
         else {
             throw new InvalidOperationException("Person doesn't exist.");
         }
+    }
+
+    public void SetExclusion(bool isExcluded) {
+        IsExcluded = isExcluded;
     }
 }
