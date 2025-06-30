@@ -25,15 +25,19 @@ public class GameList {
         }
 
         _people.Add(person);
+        foreach (Game game in Games) {
+            game.AddOwner(person);
+        }
     }
 
-    public void RemovePerson(Person person) {
-        Person? FoundPerson = _people.FirstOrDefault(p => p.Id == person.Id);
-        if (FoundPerson is not null) {
-            _people.Remove(FoundPerson);
-        }
-        else {
+    public void RemovePerson(Guid personId) {
+        Person? FoundPerson = _people.FirstOrDefault(p => p.Id == personId);
+        if (FoundPerson is null) {
             throw new InvalidOperationException("Person doesn't exist in the list.");
+        }
+        _people.Remove(FoundPerson);
+        foreach (Game game in Games) {
+            game.RemoveOwner(personId);
         }
     }
 
@@ -45,17 +49,16 @@ public class GameList {
         _games.Add(game);
     }
 
-    public void RemoveGame(Game game) {
-        Game? FoundGame = _games.FirstOrDefault(g => g.Id == game.Id);
-        if (FoundGame is not null) {
-            _games.Remove(FoundGame);
-        }
-        else {
+    public void RemoveGame(Guid gameId) {
+        Game? FoundGame = _games.FirstOrDefault(g => g.Id == gameId);
+        if (FoundGame is null) {
             throw new InvalidOperationException("Game doesn't exist in the list.");
         }
+
+        _games.Remove(FoundGame);
     }
 
-    public void PickRandomGame() {
+    public Game? PickRandomGame() {
         List<Game> EligibleGames = _games
                                 .Where(g => g.Owners.All(o => o.Value) &&
                                             (RandomlyPickedGame == null || g.Id != RandomlyPickedGame.Id))
@@ -67,5 +70,26 @@ public class GameList {
         else {
             this.RandomlyPickedGame = EligibleGames[_random.Next(EligibleGames.Count)];
         }
+        return RandomlyPickedGame;
+    }
+
+    public void SetGameExclusion(Guid gameId, bool isExcluded) {
+        Game? FoundGame = _games.FirstOrDefault(g => g.Id == gameId);
+
+        if (FoundGame is null) {
+            throw new InvalidOperationException("Game doesn't exist.");
+        }
+
+        FoundGame.SetExclusion(isExcluded);
+    }
+
+    public void SetGameOwnership(Guid gameId, Guid personId, bool isOwner) {
+        Game? FoundGame = _games.FirstOrDefault(g => g.Id == gameId);
+
+        if (FoundGame is null) {
+            throw new InvalidOperationException("Game doesn't exist.");
+        }
+
+        FoundGame.SetOwner(personId, isOwner);
     }
 }
