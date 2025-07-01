@@ -21,6 +21,8 @@ builder.Services.AddScoped<IGameListRepository, GameListRepository>();
 builder.Services.AddScoped<IGameListService, GameListService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
