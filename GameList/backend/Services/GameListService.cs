@@ -35,13 +35,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to add game. If it fails, should throw exception - pass that onto the controller
-        try {
-            gameList.AddGame(game);
-        }
-        catch {
-            throw;
-        }
+        gameList.AddGame(game);
 
         // Map back to document
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
@@ -61,13 +55,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to remove game. If it fails, should throw exception - pass that onto the controller
-        try {
-            gameList.RemoveGame(gameId);
-        }
-        catch {
-            throw;
-        }
+        gameList.RemoveGame(gameId);
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
@@ -86,13 +74,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to add person
-        try {
-            gameList.AddPerson(person);
-        }
-        catch {
-            throw;
-        }
+        gameList.AddPerson(person);
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
@@ -111,13 +93,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to remove person
-        try {
-            gameList.RemovePerson(personId);
-        }
-        catch {
-            throw;
-        }
+        gameList.RemovePerson(personId);
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
@@ -136,10 +112,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to set exclusion
-        try {
-            gameList.SetGameExclusion(gameId, isExcluded);
-        }
+        gameList.SetGameExclusion(gameId, isExcluded);
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
@@ -157,10 +130,7 @@ public class GameListService : IGameListService {
 
         GameList gameList = _mapper.Map<GameList>(gameListDocument);
 
-        // Try to set ownership
-        try {
-            gameList.SetGameOwnership(gameId, personId, isOwner);
-        }
+        gameList.SetGameOwnership(gameId, personId, isOwner);
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
