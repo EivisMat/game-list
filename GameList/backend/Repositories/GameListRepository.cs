@@ -2,7 +2,6 @@ using Models.Document;
 using MongoDB.Driver;
 
 public class GameListRepository : IGameListRepository {
-
     private readonly IMongoCollection<GameListDocument> _collection;
 
     public GameListRepository(IMongoDatabase database) {

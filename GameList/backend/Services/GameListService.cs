@@ -4,7 +4,6 @@ using Models.Document;
 using System.Diagnostics;
 
 public class GameListService : IGameListService {
-
     private readonly IGameListRepository _repository;
     private readonly IMapper _mapper;
 
