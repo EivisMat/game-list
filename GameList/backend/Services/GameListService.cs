@@ -83,7 +83,7 @@ public class GameListService : IGameListService {
         return gameList;
     }
 
-    async Task<GameList> RemovePersonAsync(Guid listId, Guid personId) {
+    public async Task<GameList> RemovePersonAsync(Guid listId, Guid personId) {
         GameListDocument? gameListDocument = await _repository.GetByIdAsync(listId);
 
         // Check list exists
