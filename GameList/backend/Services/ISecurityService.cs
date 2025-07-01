@@ -1,7 +1,7 @@
 public interface ISecurityService {
-    string EncryptPasswordAsync(string password);
-    bool ValidatePasswordAsync(string password);
+    string EncryptPassword(string password);
+    bool ValidatePassword(string password, string hashedPassword);
 
-    Task<string> CreateAccessTokenAsync(Guid listId);
-    Task<bool> ValidateAccessTokenAsync(string token);
+    string CreateAccessToken(Guid listId);
+    bool ValidateAccessToken(string token);
 }
