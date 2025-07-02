@@ -46,6 +46,10 @@ public class GameList {
             throw new InvalidOperationException("Game already exists.");
         }
 
+        foreach (Person person in People) {
+            game.AddOwner(person);
+        }
+
         _games.Add(game);
     }
 

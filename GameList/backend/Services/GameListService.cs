@@ -157,24 +157,26 @@ public class GameListService : IGameListService {
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
+        await _repository.UpdateAsync(gameListDocument);
+
         return game;
     }
 
-    public async Task<GameList?> GetListByIdAsync(Guid listId) {
+    public async Task<GameList> GetListByIdAsync(Guid listId) {
         GameListDocument? gameListDocument = await _repository.GetByIdAsync(listId);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 
         return _mapper.Map<GameList>(gameListDocument);
     }
-    public async Task<GameList?> GetListByNameAsync(string listName) {
+    public async Task<GameList> GetListByNameAsync(string listName) {
         GameListDocument? gameListDocument = await _repository.GetByNameAsync(listName);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 

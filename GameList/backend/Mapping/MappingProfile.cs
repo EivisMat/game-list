@@ -20,5 +20,14 @@ public class MappingProfile : Profile {
         CreateMap<GameListDocument, GameList>();
         CreateMap<GameDocument, Game>();
         CreateMap<PersonDocument, Person>();
+
+        CreateMap<GameList, GameListDto>();
+        CreateMap<GameListDto, GameList>();
+
+        CreateMap<Game, GameDto>();
+        CreateMap<GameDto, Game>();
+
+        CreateMap<Person, PersonDto>();
+        CreateMap<PersonDto, Person>();
     }
 }
