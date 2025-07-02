@@ -1,7 +1,6 @@
 using AutoMapper;
 using Models.Domain;
 using Models.Document;
-using System.Diagnostics;
 
 public class GameListService : IGameListService {
     private readonly IGameListRepository _repository;
@@ -147,7 +146,7 @@ public class GameListService : IGameListService {
         GameListDocument? gameListDocument = await _repository.GetByIdAsync(listId);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 

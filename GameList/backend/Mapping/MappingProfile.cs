@@ -22,7 +22,7 @@ public class MappingProfile : Profile {
         CreateMap<GameListDocument, GameList>();
         CreateMap<GameDocument, Game>()
             .ForMember(dest => dest.Owners,
-               opt => opt.MapFrom(src => src.Owners.ToDictionary(kvp => Guid.Parse(kvp.Key), kvp => kvp.Value)));
+                opt => opt.MapFrom(src => src.Owners.ToDictionary(kvp => Guid.Parse(kvp.Key), kvp => kvp.Value)));
         CreateMap<PersonDocument, Person>();
 
         CreateMap<GameList, GameListDto>();

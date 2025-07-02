@@ -25,5 +25,5 @@ public class GameListDocument {
     public required List<PersonDocument> People { get; set; }
 
     [BsonElement("randomlyPickedGame")]
-    public Game? RandomlyPickedGame { get; set; }
+    public GameDocument? RandomlyPickedGame { get; set; }
 }
