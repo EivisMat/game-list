@@ -14,11 +14,15 @@ public class MappingProfile : Profile {
         CreateMap<Game, CreateNamedEntityDto>();
 
         CreateMap<GameList, GameListDocument>();
-        CreateMap<Game, GameDocument>();
+        CreateMap<Game, GameDocument>()
+            .ForMember(dest => dest.Owners,
+                opt => opt.MapFrom(src => src.Owners.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value)));
         CreateMap<Person, PersonDocument>();
 
         CreateMap<GameListDocument, GameList>();
-        CreateMap<GameDocument, Game>();
+        CreateMap<GameDocument, Game>()
+            .ForMember(dest => dest.Owners,
+               opt => opt.MapFrom(src => src.Owners.ToDictionary(kvp => Guid.Parse(kvp.Key), kvp => kvp.Value)));
         CreateMap<PersonDocument, Person>();
 
         CreateMap<GameList, GameListDto>();
