@@ -3,7 +3,7 @@ using MongoDB.Driver;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddAutoMapper(typeof(Program));
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // Read config section
 var mongoSettings = builder.Configuration.GetSection("MongoDB");

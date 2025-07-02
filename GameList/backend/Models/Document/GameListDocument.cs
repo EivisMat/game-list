@@ -19,10 +19,10 @@ public class GameListDocument {
     public required DateTime CreationDate { get; set; }
 
     [BsonElement("games")]
-    public required List<Game> Games { get; set; }
+    public required List<GameDocument> Games { get; set; }
 
     [BsonElement("people")]
-    public required List<Person> People { get; set; }
+    public required List<PersonDocument> People { get; set; }
 
     [BsonElement("randomlyPickedGame")]
     public Game? RandomlyPickedGame { get; set; }
