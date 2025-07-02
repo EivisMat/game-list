@@ -3,5 +3,5 @@ public interface ISecurityService {
     bool ValidatePassword(string password, string hashedPassword);
 
     string CreateAccessToken(Guid listId);
-    bool ValidateAccessToken(string token);
+    AuthValidationResult ValidateHttpRequest(HttpRequest request);
 }
