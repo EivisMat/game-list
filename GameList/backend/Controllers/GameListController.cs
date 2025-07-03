@@ -275,4 +275,23 @@ public class GameListController : ControllerBase {
 
         return NoContent();
     }
+
+    [HttpPost("auth/login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto loginDto) {
+        // Check if list exists
+        GameList? gameList = await _gameListService.GetListByNameAsync(loginDto.Name);
+
+        if (gameList is null) {
+            return Unauthorized(new { message = "Incorrect name or password." });
+        }
+
+        // Check if password is correct
+        if (!_securityService.ValidatePassword(loginDto.Password, gameList.Password)) {
+            return Unauthorized(new { message = "Incorrect name or password." });
+        }
+
+        return Ok(new LoginResponseDto {
+            AccessToken = _securityService.CreateAccessToken(gameList.Id)
+        });
+    }
 }
