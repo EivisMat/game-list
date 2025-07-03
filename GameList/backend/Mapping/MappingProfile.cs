@@ -6,12 +6,12 @@ using Models.Document;
 public class MappingProfile : Profile {
     public MappingProfile() {
         CreateMap<CreateGameListDto, GameList>();
-        CreateMap<CreatePersonDto, Person>();
-        CreateMap<CreateGameDto, Game>();
+        CreateMap<CreateNamedEntityDto, Person>();
+        CreateMap<CreateNamedEntityDto, Game>();
 
         CreateMap<GameList, CreateGameListDto>();
-        CreateMap<Person, CreatePersonDto>();
-        CreateMap<Game, CreateGameDto>();
+        CreateMap<Person, CreateNamedEntityDto>();
+        CreateMap<Game, CreateNamedEntityDto>();
 
         CreateMap<GameList, GameListDocument>();
         CreateMap<Game, GameDocument>()

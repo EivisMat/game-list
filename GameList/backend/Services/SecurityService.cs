@@ -13,7 +13,7 @@ public class SecurityService : ISecurityService {
         _jwtSettings = jwtSettings.Value;
     }
 
-    public string EncryptPassword(string password) {
+    public string HashPassword(string password) {
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
     public bool ValidatePassword(string password, string hashedPassword) {

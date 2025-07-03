@@ -1,5 +1,5 @@
 namespace Models.DTOs;
 
-public class CreatePersonDto {
+public class CreateNamedEntityDto {
     public string Name { get; set; } = string.Empty;
 }
