@@ -61,7 +61,7 @@ public class GameListController : ControllerBase {
     }
 
     [HttpPost("list/{id}/games")]
-    public async Task<IActionResult> AddGame(string id, [FromBody] CreateNamedEntityDto gameDto) {
+    public async Task<IActionResult> AddGame(string id, [FromBody] CreateGameDto gameDto) {
         // Validate request
         AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
         if (!result.IsValid) {
@@ -220,7 +220,7 @@ public class GameListController : ControllerBase {
     }
 
     [HttpPost("list/{id}/people")]
-    public async Task<IActionResult> AddPerson(string id, [FromBody] CreateNamedEntityDto personDto) {
+    public async Task<IActionResult> AddPerson(string id, [FromBody] CreatePersonDto personDto) {
         // Validate request
         AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
         if (!result.IsValid) {
