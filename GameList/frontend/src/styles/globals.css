@@ -16,7 +16,7 @@ body {
     border-radius: 12px;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
     width: 100%;
-    max-width: 800px;
+    min-width: 800px;
     display: flex;
     flex-direction: column;
     gap: 2rem;
