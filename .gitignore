@@ -44,6 +44,13 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 
+# Secrets
+appsettings.Development.json
+
+launchSettings.json
+.editorconfig
+*.sln
+
 # Logs
 logs
 *.log
