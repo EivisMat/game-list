@@ -16,6 +16,6 @@ public interface IGameListService {
 
     Task<Game?> PickRandomGameAsync(Guid listId);
 
-    Task<GameList?> GetListByIdAsync(Guid id);
-    Task<GameList?> GetListByNameAsync(string name);
+    Task<GameList> GetListByIdAsync(Guid id);
+    Task<GameList> GetListByNameAsync(string name);
 }

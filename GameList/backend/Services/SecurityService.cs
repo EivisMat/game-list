@@ -13,7 +13,7 @@ public class SecurityService : ISecurityService {
         _jwtSettings = jwtSettings.Value;
     }
 
-    public string EncryptPassword(string password) {
+    public string HashPassword(string password) {
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
     public bool ValidatePassword(string password, string hashedPassword) {
@@ -41,7 +41,7 @@ public class SecurityService : ISecurityService {
         return tokenHandler.WriteToken(token);
     }
 
-    public bool ValidateAccessToken(string token) {
+    internal bool ValidateAccessToken(string token) {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
 
@@ -63,4 +63,28 @@ public class SecurityService : ISecurityService {
         }
     }
 
+    internal bool ExtractAccessToken(string? authHeader, out string token) {
+        token = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) {
+            return false;
+        }
+
+        token = authHeader.Substring("Bearer ".Length).Trim();
+        return !string.IsNullOrWhiteSpace(token);
+    }
+
+    public AuthValidationResult ValidateHttpRequest(HttpRequest request) {
+        string? authHeader = request.Headers.Authorization.FirstOrDefault();
+        if (!ExtractAccessToken(authHeader, out string token)) {
+            return new AuthValidationResult(false, "Malformed access token.");
+        }
+
+        if (!ValidateAccessToken(token)) {
+            return new AuthValidationResult(false, "Invalid or expired access token.");
+        }
+
+        return new AuthValidationResult(true, "Access token is valid.");
+    }
 }
+public record AuthValidationResult(bool IsValid, string Message);

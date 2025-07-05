@@ -15,7 +15,7 @@ public class GameDocument {
     public required DateTime AdditionDate { get; set; }
 
     [BsonElement("owners")]
-    public required Dictionary<Guid, bool> Owners { get; set; }
+    public required Dictionary<string, bool> Owners { get; set; }
 
     [BsonElement("isExcluded")]
     public required bool IsExcluded { get; set; }

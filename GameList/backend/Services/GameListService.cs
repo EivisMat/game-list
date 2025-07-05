@@ -1,14 +1,15 @@
 using AutoMapper;
 using Models.Domain;
 using Models.Document;
-using System.Diagnostics;
 
 public class GameListService : IGameListService {
     private readonly IGameListRepository _repository;
+    private readonly ISecurityService _securityService;
     private readonly IMapper _mapper;
 
-    public GameListService(IGameListRepository repository, IMapper mapper) {
+    public GameListService(IGameListRepository repository, ISecurityService securityService, IMapper mapper) {
         _repository = repository;
+        _securityService = securityService;
         _mapper = mapper;
     }
 
@@ -18,6 +19,14 @@ public class GameListService : IGameListService {
             || await _repository.GetByIdAsync(gameList.Id) is not null) {
             throw new InvalidOperationException("Game list already exists.");
         }
+
+        foreach (Game game in gameList.Games) {
+            foreach (Person person in gameList.People) {
+                game.AddOwner(person);
+            }
+        }
+
+        gameList.Password = _securityService.HashPassword(gameList.Password);
 
         // Map to GameListDocument
         GameListDocument gameListDocument = _mapper.Map<GameListDocument>(gameList);
@@ -147,7 +156,7 @@ public class GameListService : IGameListService {
         GameListDocument? gameListDocument = await _repository.GetByIdAsync(listId);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 
@@ -157,24 +166,26 @@ public class GameListService : IGameListService {
 
         gameListDocument = _mapper.Map<GameListDocument>(gameList);
 
+        await _repository.UpdateAsync(gameListDocument);
+
         return game;
     }
 
-    public async Task<GameList?> GetListByIdAsync(Guid listId) {
+    public async Task<GameList> GetListByIdAsync(Guid listId) {
         GameListDocument? gameListDocument = await _repository.GetByIdAsync(listId);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 
         return _mapper.Map<GameList>(gameListDocument);
     }
-    public async Task<GameList?> GetListByNameAsync(string listName) {
+    public async Task<GameList> GetListByNameAsync(string listName) {
         GameListDocument? gameListDocument = await _repository.GetByNameAsync(listName);
 
         // Check list exists
-        if (gameListDocument is not null) {
+        if (gameListDocument is null) {
             throw new InvalidOperationException("Game list doesn't exist.");
         }
 
