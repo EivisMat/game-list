@@ -107,14 +107,17 @@ public class GameListController : ControllerBase {
             return BadRequest(new { message = "Malformed game id." });
         }
 
+        GameList? gameList;
         try {
-            GameList? gameList = await _gameListService.RemoveGameAsync(listId, gameId);
+            gameList = await _gameListService.RemoveGameAsync(listId, gameId);
         }
         catch (Exception ex) {
             return NotFound(new { message = ex.Message });
         }
 
-        return NoContent();
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
     }
 
     [HttpPut("list/{id}/games/{gameid}/setexclude")]
@@ -266,14 +269,16 @@ public class GameListController : ControllerBase {
             return BadRequest(new { message = "Malformed person id." });
         }
 
+        GameList? gameList;
         try {
-            GameList? gameList = await _gameListService.RemovePersonAsync(listId, personId);
+            gameList = await _gameListService.RemovePersonAsync(listId, personId);
         }
         catch (Exception ex) {
             return NotFound(new { message = ex.Message });
         }
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
 
-        return NoContent();
+        return Ok(gameListDto);
     }
 
     [HttpDelete("list/{id}")]
