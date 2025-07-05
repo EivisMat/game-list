@@ -215,7 +215,7 @@ public class GameListController : ControllerBase {
             return NotFound(new { message = ex.Message });
         }
 
-        GameDto gameDto = _mapper.Map<GameDto>(game);
+        GameDto? gameDto = _mapper.Map<GameDto>(game);
         return Ok(gameDto);
     }
 
