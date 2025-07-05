@@ -8,7 +8,7 @@ const List = () => {
             <div className="list-header">
                 <div className="header-left">
                     <button className="icon-button" title="Go back"><FontAwesomeIcon className='icon-back' icon={faArrowLeft} /></button>
-                    <h1 className="list-title">List Name Placeholderaaaaaaaaaaaaaaaaaa </h1>
+                    <h1 className="list-title">List Name</h1>
                     <button className="icon-button" title="Refresh"><FontAwesomeIcon className='icon-refresh' icon={faRefresh} /></button>
                 </div>
                 <button className="delete-list-btn">Delete List</button>
