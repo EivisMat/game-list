@@ -276,6 +276,29 @@ public class GameListController : ControllerBase {
         return NoContent();
     }
 
+    [HttpDelete("list/{id}")]
+    public async Task<IActionResult> DeleteList(string id) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // List id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        try {
+            await _gameListService.DeleteListAsync(listId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        return NoContent();
+    }
+
     [HttpPost("auth/login")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto loginDto) {
         // Check if list exists
