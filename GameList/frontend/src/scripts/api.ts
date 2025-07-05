@@ -118,7 +118,7 @@ export async function setExclusion(
     listId: string,
     gameId: string,
     body: {
-        value: string
+        value: boolean
     },
     token: string
 ) {
@@ -145,7 +145,7 @@ export async function setOwned(
     gameId: string,
     personId: string,
     body: {
-        value: string
+        value: boolean
     },
     token: string
 ) {
