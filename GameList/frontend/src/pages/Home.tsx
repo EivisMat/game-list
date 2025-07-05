@@ -1,3 +1,7 @@
+import '../styles/Home.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faX } from '@fortawesome/free-solid-svg-icons';
+
 const Home = () => {
     const setActive = (event: React.MouseEvent<HTMLButtonElement>) => {
         const clickedButton = event.currentTarget;
@@ -89,19 +93,19 @@ const Home = () => {
                     <h1>Quick Select</h1>
                     {/* Use TS to fill in quick select buttons here, just placeholders for now */}
                     <div className="quick-select-li">
-                        <button className="remove-list-btn">X</button> <button className="quick-select-btn">List Name 1</button>
+                        <button className="remove-list-btn"><FontAwesomeIcon icon={faX} /></button> <button className="quick-select-btn">List Name 1</button>
                     </div>
                     <div className="quick-select-li">
-                        <button className="remove-list-btn">X</button> <button className="quick-select-btn">List Name 2</button>
+                        <button className="remove-list-btn"><FontAwesomeIcon icon={faX} /></button> <button className="quick-select-btn">List Name 2</button>
                     </div>
                     <div className="quick-select-li">
-                        <button className="remove-list-btn">X</button> <button className="quick-select-btn">List Name 3</button>
+                        <button className="remove-list-btn"><FontAwesomeIcon icon={faX} /></button> <button className="quick-select-btn">List Name 3</button>
                     </div>
                     <div className="quick-select-li">
-                        <button className="remove-list-btn">X</button> <button className="quick-select-btn">List Name 4</button>
+                        <button className="remove-list-btn"><FontAwesomeIcon icon={faX} /></button> <button className="quick-select-btn">List Name 4</button>
                     </div>
                     <div className="quick-select-li">
-                        <button className="remove-list-btn">X</button> <button className="quick-select-btn">List Name 5</button>
+                        <button className="remove-list-btn"><FontAwesomeIcon icon={faX} /></button> <button className="quick-select-btn">List Name 5</button>
                     </div>
                 </div>
             </div>
