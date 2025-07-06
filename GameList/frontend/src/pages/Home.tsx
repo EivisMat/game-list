@@ -4,12 +4,11 @@ import '../styles/Home.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faX } from '@fortawesome/free-solid-svg-icons';
 import { createList, login } from '../scripts/api.ts';
-
-type AuthEntry = {
-    id: string;
-    name: string;
-    accessToken: string;
-};
+import {
+    addAuthEntry,
+    removeAuthEntry
+} from "../scripts/auth.ts";
+import type { AuthEntry } from "../scripts/auth.ts";
 
 const Home = () => {
     const [authList, setAuthList] = useState<AuthEntry[]>([]);
@@ -25,24 +24,6 @@ const Home = () => {
             }
         }
     }, []);
-
-    function saveAuthList(list: AuthEntry[]) {
-        localStorage.setItem('authData', JSON.stringify(list));
-        setAuthList(list);
-    }
-
-    function addAuthEntry(newEntry: AuthEntry) {
-        const exists = authList.some((entry) => entry.id === newEntry.id);
-        if (exists) return;
-
-        const updatedList = [...authList, newEntry];
-        saveAuthList(updatedList);
-    }
-
-    function removeAuthEntry(id: string) {
-        const updatedList = authList.filter((entry) => entry.id !== id);
-        saveAuthList(updatedList);
-    }
 
     async function handleListCreation(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -65,11 +46,11 @@ const Home = () => {
         try {
             const response = await createList(body as { name: string; password: string; people: string[]; games: string[] });
             addAuthEntry({
-                id: response.listId,
+                id: response.id,
                 name: body.name.toString(),
-                accessToken: response.token,
+                accessToken: response.accessToken,
             });
-            navigate(`/thelist/list?id=${response.id}`);
+            navigate(`/list/${response.id}`);
         } catch (error) {
             console.error('Failed to create list:', error);
             alert('Failed to create list. Please try again.');
@@ -89,7 +70,7 @@ const Home = () => {
                 name: body.name,
                 accessToken: response.accessToken,
             });
-            navigate(`/thelist/list?id=${response.id}`);
+            navigate(`/list/${response.id}`);
         } catch (error) {
             console.error('Login failed:', error);
             alert('Login failed. Please check your credentials and try again.');
@@ -98,7 +79,7 @@ const Home = () => {
 
     // Navigate to selected list on quick-select click
     function handleQuickSelectClick(id: string) {
-        navigate(`/thelist/list?id=${id}`);
+        navigate(`/list/${id}`);
     }
 
     const setActive = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -187,7 +168,10 @@ const Home = () => {
                         <div key={id} className="quick-select-li">
                             <button
                                 className="remove-list-btn"
-                                onClick={() => removeAuthEntry(id)}
+                                onClick={() => {
+                                    removeAuthEntry(id);
+                                    window.location.reload();
+                                }}
                                 aria-label={`Remove list ${name}`}>
                                 <FontAwesomeIcon icon={faX} />
                             </button>

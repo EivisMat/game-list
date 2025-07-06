@@ -65,6 +65,7 @@ public class GameList {
     public Game? PickRandomGame() {
         List<Game> EligibleGames = _games
                                 .Where(g => g.Owners.All(o => o.Value) &&
+                                            !g.IsExcluded &&
                                             (RandomlyPickedGame == null || g.Id != RandomlyPickedGame.Id))
                                 .ToList();
 

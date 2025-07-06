@@ -13,8 +13,6 @@ builder.Services.AddCors(options => {
     });
 });
 
-Console.WriteLine(allowedFrontend);
-
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 

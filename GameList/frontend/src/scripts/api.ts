@@ -158,7 +158,7 @@ export async function setOwned(
 ) {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}/games/${gameId}/people/${personId}`, {
+    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}/games/${gameId}/owners/${personId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -192,7 +192,12 @@ export async function getRandomGame(
         throw new Error(`Failed to get random game: ${response.statusText}`);
     }
 
-    return await response.json();
+    try {
+        return await response.json();
+    }
+    catch {
+        return null;
+    }
 }
 
 export async function addPerson(
@@ -259,5 +264,5 @@ export async function deleteList(
     if (!response.ok) {
         throw new Error(`Failed to delete list: ${response.statusText}`);
     }
-    return await response.json();
+    return true;
 }
