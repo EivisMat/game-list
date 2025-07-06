@@ -8,12 +8,19 @@ export async function createList(
 ) {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+    const formattedBody = {
+        name: body.name,
+        password: body.password,
+        games: (body.games || []).map((g) => ({ name: g })),
+        people: (body.people || []).map((p) => ({ name: p }))
+    }
+
     const response = await fetch(`${backendUrl}/thelist/api/list/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(formattedBody),
     });
 
     if (!response.ok) {
@@ -232,5 +239,25 @@ export async function deletePerson(
         throw new Error(`Failed to remove person: ${response.statusText}`);
     }
 
+    return await response.json();
+}
+
+export async function deleteList(
+    listId: string,
+    token: string
+) {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to delete list: ${response.statusText}`);
+    }
     return await response.json();
 }

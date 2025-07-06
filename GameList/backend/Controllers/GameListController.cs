@@ -30,7 +30,11 @@ public class GameListController : ControllerBase {
         catch (Exception ex) {
             return NotFound(new { message = ex.Message });
         }
-        return Ok(new { listId = gameList.Id, token = _securityService.CreateAccessToken(gameList.Id) });
+
+        return Ok(new LoginResponseDto {
+            Id = gameList.Id.ToString(),
+            AccessToken = _securityService.CreateAccessToken(gameList.Id)
+        });
     }
 
     [HttpGet("list/{id}")]
@@ -319,6 +323,7 @@ public class GameListController : ControllerBase {
         }
 
         return Ok(new LoginResponseDto {
+            Id = gameList.Id.ToString(),
             AccessToken = _securityService.CreateAccessToken(gameList.Id)
         });
     }
