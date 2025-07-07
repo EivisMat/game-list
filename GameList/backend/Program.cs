@@ -1,31 +1,38 @@
-using GameList.Models;
-using GameList.Services;
-using GameList.Config;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connString = builder.Configuration.GetSection("GameListDatabase:ConnectionString").Value;
-Console.WriteLine($"Connection string: '{connString}'");
+var allowedFrontend = builder.Configuration["AllowedFrontend"];
+
+// Define CORS policy
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowFrontend", policy => {
+        policy.WithOrigins(allowedFrontend!)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Add services to the container.
-builder.Services.Configure<GameListDatabaseSettings>(
-    builder.Configuration.GetSection("GameListDatabase"));
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
-builder.Services.AddSingleton<GameListsService>();
+// Read config section
+var mongoSettings = builder.Configuration.GetSection("MongoDB");
+var connectionString = mongoSettings["ConnectionString"];
+var databaseName = mongoSettings["DatabaseName"];
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/auth/login"; // Optional
-        options.ExpireTimeSpan = TimeSpan.FromDays(14);
-        options.SlidingExpiration = true;
-    });
+// Register MongoDB services
+builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(connectionString));
+builder.Services.AddScoped(serviceProvider => {
+    var client = serviceProvider.GetRequiredService<IMongoClient>();
+    return client.GetDatabase(databaseName);
+});
 
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
+builder.Services.AddScoped<IGameListRepository, GameListRepository>();
+builder.Services.AddScoped<IGameListService, GameListService>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
-builder.Services.AddScoped<SecurityService>();
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -35,22 +42,15 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseCors(policy =>
-{
-    policy.AllowAnyOrigin()
-          .AllowAnyMethod()
-          .AllowAnyHeader();
-});
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

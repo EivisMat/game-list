@@ -1,311 +1,330 @@
-using GameList.Models;
-using GameList.Services;
-using GameList.DTOs;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-
-namespace GameList.Controllers;
+using Models.DTOs;
+using Models.Domain;
+using MongoDB.Driver;
 
 [ApiController]
-[Route("api/lists")]
-public class GamesController : ControllerBase {
-    private readonly GameListsService _gamesService;
-    private readonly SecurityService _securityService;
+[Route("thelist/api")]
+public class GameListController : ControllerBase {
+    private readonly IGameListService _gameListService;
+    private readonly ISecurityService _securityService;
+    private readonly IMapper _mapper;
 
-    public GamesController(GameListsService gamesService, SecurityService securityService) {
-        _gamesService = gamesService;
+    public GameListController(IGameListService gameListService, ISecurityService securityService, IMapper mapper) {
+        _gameListService = gameListService;
         _securityService = securityService;
+        _mapper = mapper;
     }
 
-    // POST /api/lists/create
-    // Creates a new game list
-    // Request body: { 
-    //  "name" : "string", 
-    //  "password" : "string", 
-    //  "games" : ["string"], 
-    //  "people" : ["string"] 
-    // }
-    // => Returns: {"id": "string", "token" : "string"} // JWT token for auth
-    [HttpPost("create")]
-    public async Task<IActionResult> CreateGameList([FromBody] GameListDTO newListDTO) {
-        if (newListDTO == null || string.IsNullOrWhiteSpace(newListDTO.Name)) {
-            return BadRequest(new { message = "Invalid game list data." });
+    [HttpPost("list/create")]
+    public async Task<IActionResult> CreateList([FromBody] CreateGameListDto gameListDto) {
+        if (gameListDto is null) {
+            return BadRequest(new { message = "Malformed game list." });
         }
 
-        // Check if a list with the same name already exists
-        var existingList = await _gamesService.GetByNameAsync(newListDTO.Name);
-        if (existingList != null) { 
-            return Conflict(new { message = "A game list with this name already exists." });
+        GameList gameList = _mapper.Map<GameList>(gameListDto);
+        try {
+            await _gameListService.CreateListAsync(gameList);
         }
-        newListDTO.Password = _securityService.HashPassword(newListDTO.Password);
-
-        Models.GameList createdList = new Models.GameList {
-            Name = newListDTO.Name,
-            Password = newListDTO.Password,
-            Games = newListDTO.Games.Select(g => new Game { Name = g }).ToList(),
-            People = newListDTO.People.Select(p => new Person { Name = p }).ToList()
-        };
-
-        // Populate Owners list for each game
-        foreach (Game game in createdList.Games) {
-            foreach (Person person in createdList.People) {
-                game.AddOwner(person.Id, false); // default to not owning
-            }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
         }
 
-        await _gamesService.CreateAsync(createdList);
-
-        // Generate JWT token for authentication
-        string token = _securityService.GenerateJwtToken(createdList.Id!);
-
-        // Return created list ID and token
-        return CreatedAtAction(
-            nameof(GetListById),
-            new { id = createdList.Id },
-            new { id = createdList.Id, token = token }
-        );
-
-    }
-
-    // POST /api/lists/login
-    // Accesses a game list by name and password
-    // Request body: { "name": "string", "password": "string" }
-    // => Returns: {"id": "string", "token" : "string"} //
-    [HttpPost("login")]
-    public async Task<IActionResult> LoginToGameList([FromBody] LoginDTO loginDTO) {
-        if (loginDTO == null || string.IsNullOrWhiteSpace(loginDTO.Name) || string.IsNullOrWhiteSpace(loginDTO.Password)) {
-            return BadRequest(new { message = "Invalid login data." });
-        }
-
-        Models.GameList gameList = await _gamesService.GetByNameAsync(loginDTO.Name);
-
-        if (gameList == null) {
-            return NotFound(new { message = "Game list not found." });
-        }
-
-        if (!_securityService.VerifyPassword(gameList.Password, loginDTO.Password)) {
-            return Unauthorized(new { message = "Incorrect password." });
-        }
-
-        // Generate JWT token for authentication
-        var token = _securityService.GenerateJwtToken(gameList.Id!);
-
-        // Return game list ID and token
-        return Ok(new { id = gameList.Id, token });
-    }
-
-    // GET /api/lists/{id}
-    // HEADER: Authorization: Bearer {token}
-    // Retrieves a game list by its ID
-    // => Returns: GameList object without password
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Models.GameList>> GetListById(string id) {
-        // Validate the JWT token
-        string token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-        string? listId = _securityService.ValidateJwtToken(token);
-
-        if (listId == null || listId != id) {
-            return Unauthorized(new { message = "Invalid token." });
-        }
-
-        Models.GameList gameList = await _gamesService.GetByIdAsync(id);
-
-        if (gameList == null) {
-            return NotFound(new { message = "Game list not found." });
-        }
-
-        // Return the game list without the password
-        return Ok(new {
-            gameList.Id,
-            gameList.Name,
-            gameList.Games,
-            gameList.People,
-            gameList.RandomlyPickedGame
+        return Ok(new LoginResponseDto {
+            Id = gameList.Id.ToString(),
+            AccessToken = _securityService.CreateAccessToken(gameList.Id)
         });
     }
 
-    // PATCH /api/lists/{id}
-    // HEADER: Authorization: Bearer {token}
-    // BODY: {"action": "string", "target": "string", "value": "string"}
-    // "action": "add"/"remove", "target": "game"/"person", "value": "string" adds or removes person/game from DB. if remove, value not used.
-    // "action": "toggleowner", "target": "{personid}", "value": "{gameId}" toggles personId ownership of gameId
-    // "action": "toggleexclude", "target": "game", "value": "not used" toggles exclusion of game from being picked randomly
-    [HttpPatch("{id}")]
-    public async Task<IActionResult> UpdateGameList(string id, [FromBody] UpdateGameListDTO updateDTO) {
-        // Validate the JWT token
-        string token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-        string? listId = _securityService.ValidateJwtToken(token);
-
-        if (listId == null || listId != id) {
-            return Unauthorized(new { message = "Invalid token." });
+    [HttpGet("list/{id}")]
+    public async Task<IActionResult> GetList(string id) {
+        // Validate request (check if token is valid)
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
         }
 
-        Models.GameList gameList = await _gamesService.GetByIdAsync(id);
-        if (gameList == null) {
-            return NotFound(new { message = "Game list not found." });
+        // Id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
         }
 
-        switch (updateDTO.Action?.ToLower()) {
-            case "add":
-                if (updateDTO.Target?.ToLower() == "game" && !string.IsNullOrWhiteSpace(updateDTO.Value)) {
-                    if (!gameList.Games.Any(g => g.Name == updateDTO.Value)) {
-                        Game newGame = new Game { Name = updateDTO.Value };
-                        // Add owners for each person
-                        foreach (Person person in gameList.People) {
-                            newGame.AddOwner(person.Id, false);
-                        }
-                        gameList.Games.Add(newGame);
-                    }
-                }
-                else if (updateDTO.Target?.ToLower() == "person" && !string.IsNullOrWhiteSpace(updateDTO.Value)){
-                    if (!gameList.People.Any(p => p.Name == updateDTO.Value)) {
-                        Person newPerson = new Person { Name = updateDTO.Value };
-                        gameList.People.Add(newPerson);
-
-                        // Add owner entry for each game
-                        foreach (Game game in gameList.Games) {
-                            game.AddOwner(newPerson.Id, false);
-                        }
-                    }
-                }
-                break;
-
-            case "remove":
-                if (updateDTO.Target?.ToLower() == "game" && !string.IsNullOrWhiteSpace(updateDTO.Value)) {
-                    Game? gameToRemove = gameList.Games.FirstOrDefault(g => g.Id == updateDTO.Value);
-                    if (gameToRemove != null) {
-                        gameList.Games.Remove(gameToRemove);
-                    }
-                    else {
-                        return NotFound(new { message = "Game not found." });
-                    }
-                }
-                else if (updateDTO.Target?.ToLower() == "person" && !string.IsNullOrWhiteSpace(updateDTO.Value)) {
-                    Person? personToRemove = gameList.People.FirstOrDefault(p => p.Id == updateDTO.Value);
-                    if (personToRemove != null) {
-                        gameList.People.Remove(personToRemove);
-                        
-                        // Remove owner entry from each game
-                        foreach (Game game in gameList.Games) {
-                            game.RemoveOwner(personToRemove.Id);
-                        }
-                    }
-                    else {
-                        return NotFound(new { message = "Person not found." });
-                    }
-                }
-                break;
-
-            case "toggleowner":
-                if (!string.IsNullOrWhiteSpace(updateDTO.Target) && !string.IsNullOrWhiteSpace(updateDTO.Value)) {
-                    string[] parts = updateDTO.Target.Split('|');
-                    if (parts.Length != 2) {
-                        return BadRequest(new { message = "Invalid target format for toggleowner. Expected 'personId|gameId'." });
-                    }
-
-                    string personId = parts[0];
-                    string gameId = parts[1];
-                    bool state = updateDTO.Value.ToLower() == "true";
-
-                    Game? game = gameList.Games.FirstOrDefault(g => g.Id == gameId);
-                    if (game != null) {
-                        Person? person = gameList.People.FirstOrDefault(p => p.Id == personId);
-                        if (person != null) {
-                            game.ToggleOwner(personId, state);
-                        }
-                        else {
-                            return NotFound(new { message = "Person not found." });
-                        }
-                    }
-                    else {
-                        return NotFound(new { message = "Game not found." });
-                    }
-                }
-                else {
-                    return BadRequest(new { message = "Missing target or value for toggleowner." });
-                }
-                break;
-            case "toggleexclude":
-                if (!string.IsNullOrWhiteSpace(updateDTO.Target)) {
-                    string gameId = updateDTO.Target;
-                    bool state = updateDTO.Value?.ToLower() == "true";
-                    Game? game = gameList.Games.FirstOrDefault(g => g.Id == gameId);
-                    if (game != null) {
-                        game.ToggleExclude(state);
-                    }
-                    else {
-                        return NotFound(new { message = "Game not found." });
-                    }
-                }
-                else {
-                    return BadRequest(new { message = "Missing target for toggleexclude." });
-                }
-                break;
-
-            default:
-                return BadRequest(new { message = "Invalid action or target." });
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.GetListByIdAsync(listId);
         }
-        await _gamesService.UpdateAsync(gameList);
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
 
-        // Return the updated game list without the password
-        return Ok(new {
-            gameList.Id,
-            gameList.Name,
-            gameList.Games,
-            gameList.People,
-            gameList.RandomlyPickedGame
-        });
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+
     }
-    
-    // GET /api/lists/{id}/game
-    // HEADER: Authorization: Bearer {token}
-    // Randomly pick game
-    // => Returns: Game object
-    [HttpGet("{id}/game")]
+
+    [HttpPost("list/{id}/games")]
+    public async Task<IActionResult> AddGame(string id, [FromBody] CreateNamedEntityDto gameDto) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // Id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.GetListByIdAsync(listId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        Game game = _mapper.Map<Game>(gameDto);
+        gameList = await _gameListService.AddGameAsync(listId, game);
+
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpDelete("list/{id}/games/{gameid}")]
+    public async Task<IActionResult> DeleteGame(string id, string gameid) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // Check if list id is valid
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        // Check if game id is valid
+        if (!Guid.TryParse(gameid, out Guid gameId)) {
+            return BadRequest(new { message = "Malformed game id." });
+        }
+
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.RemoveGameAsync(listId, gameId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpPut("list/{id}/games/{gameid}/setexclude")]
+    public async Task<IActionResult> SetExclusion(string id, string gameid, [FromBody] SetBooleanDto excludeDto) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // Check if list id is valid
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        // Check if game id is valid
+        if (!Guid.TryParse(gameid, out Guid gameId)) {
+            return BadRequest(new { message = "Malformed game id." });
+        }
+
+        // Check if excludeDto.Value is a boolean
+        if (excludeDto.Value.GetType() != typeof(bool)) {
+            return BadRequest(new { message = "Malformed exclusion value." });
+        }
+
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.SetGameExclusionAsync(listId, gameId, excludeDto.Value);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpPut("list/{id}/games/{gameid}/owners/{personid}")]
+    public async Task<IActionResult> SetOwner(string id, string gameid, string personid, [FromBody] SetBooleanDto ownerDto) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // Check if list id is valid
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        // Check if game id is valid
+        if (!Guid.TryParse(gameid, out Guid gameId)) {
+            return BadRequest(new { message = "Malformed game id." });
+        }
+
+        // Check if person id is valid
+        if (!Guid.TryParse(personid, out Guid personId)) {
+            return BadRequest(new { message = "Malformed person id." });
+        }
+
+        // Check if excludeDto.Value is a boolean
+        if (ownerDto.Value.GetType() != typeof(bool)) {
+            return BadRequest(new { message = "Malformed exclusion value." });
+        }
+
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.SetGameOwnershipAsync(listId, gameId, personId, ownerDto.Value);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpGet("list/{id}/games/random")]
     public async Task<IActionResult> GetRandomGame(string id) {
-        // Validate the JWT token
-        string token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-        string? listId = _securityService.ValidateJwtToken(token);
-
-        if (listId == null || listId != id)
-            return Unauthorized(new { message = "Invalid token." });
-
-        Models.GameList gameList = await _gamesService.GetByIdAsync(id);
-        Game? game = gameList.GetRandomGame();
-        
-        // Update game list
-        await _gamesService.UpdateAsync(gameList);
-
-        if (game == null) {
-            return NotFound(new { message = "No valid games." });
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
         }
 
-        return Ok(game);
+        // Id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        Game? game;
+        try {
+            game = await _gameListService.PickRandomGameAsync(listId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        GameDto? gameDto = _mapper.Map<GameDto>(game);
+        return Ok(gameDto);
     }
 
-    // DELETE /api/lists/{id}
-    // HEADER: Authorization: Bearer {token}
-    // Deletes a game list by its ID
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteGameList(string id) {
-        // Validate the JWT token
-        string token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
-        string? listId = _securityService.ValidateJwtToken(token);
-
-        if (listId == null || listId != id) {
-            return Unauthorized(new { message = "Invalid token." });
+    [HttpPost("list/{id}/people")]
+    public async Task<IActionResult> AddPerson(string id, [FromBody] CreateNamedEntityDto personDto) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
         }
 
-        Models.GameList gameList = await _gamesService.GetByIdAsync(id);
-        if (gameList == null) {
-            return NotFound(new { message = "Game list not found." });
+        // Id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
         }
 
-        bool result = await _gamesService.DeleteListAsync(id);
-        if (!result) {
-            return BadRequest(new { message = "Failed to delete the game list." });
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.GetListByIdAsync(listId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
         }
 
-        return Ok(new { message = "Game list deleted successfully." });
+        Person person = _mapper.Map<Person>(personDto);
+        gameList = await _gameListService.AddPersonAsync(listId, person);
+
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpDelete("list/{id}/people/{personid}")]
+    public async Task<IActionResult> DeletePerson(string id, string personid) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // List id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        // Person id check
+        if (!Guid.TryParse(personid, out Guid personId)) {
+            return BadRequest(new { message = "Malformed person id." });
+        }
+
+        GameList? gameList;
+        try {
+            gameList = await _gameListService.RemovePersonAsync(listId, personId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+        GameListDto gameListDto = _mapper.Map<GameListDto>(gameList);
+
+        return Ok(gameListDto);
+    }
+
+    [HttpDelete("list/{id}")]
+    public async Task<IActionResult> DeleteList(string id) {
+        // Validate request
+        AuthValidationResult result = _securityService.ValidateHttpRequest(Request);
+        if (!result.IsValid) {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        // List id check
+        if (!Guid.TryParse(id, out Guid listId)) {
+            return BadRequest(new { message = "Malformed list id." });
+        }
+
+        try {
+            await _gameListService.DeleteListAsync(listId);
+        }
+        catch (Exception ex) {
+            return NotFound(new { message = ex.Message });
+        }
+
+        return NoContent();
+    }
+
+    [HttpPost("auth/login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequestDto loginDto) {
+        // Check if list exists
+        GameList? gameList = await _gameListService.GetListByNameAsync(loginDto.Name);
+
+        if (gameList is null) {
+            return Unauthorized(new { message = "Incorrect name or password." });
+        }
+
+        // Check if password is correct
+        if (!_securityService.ValidatePassword(loginDto.Password, gameList.Password)) {
+            return Unauthorized(new { message = "Incorrect name or password." });
+        }
+
+        return Ok(new LoginResponseDto {
+            Id = gameList.Id.ToString(),
+            AccessToken = _securityService.CreateAccessToken(gameList.Id)
+        });
     }
 }

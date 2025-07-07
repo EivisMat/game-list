@@ -1,72 +1,90 @@
-using System;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-using GameList.Config;
+using AutoMapper;
+using BCrypt.Net;
 using Microsoft.Extensions.Options;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
-namespace GameList.Services
-{
-    public class SecurityService
-    {
-        private readonly string _jwtSecret;
-        private readonly TimeSpan _jwtExpiry;
-        
-        public SecurityService(IOptions<JwtSettings> settings) {
-            _jwtSecret = settings.Value.Secret;
-            _jwtExpiry = TimeSpan.FromDays(settings.Value.ExpiryDays);
+public class SecurityService : ISecurityService {
+    private readonly JwtSettings _jwtSettings;
+
+    public SecurityService(IOptions<JwtSettings> jwtSettings) {
+        _jwtSettings = jwtSettings.Value;
+    }
+
+    public string HashPassword(string password) {
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
+    public bool ValidatePassword(string password, string hashedPassword) {
+        return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
+    }
+
+    public string CreateAccessToken(Guid listId) {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+
+        var claims = new[]
+        {
+            new Claim("listId", listId.ToString())
+        };
+
+        var tokenDescriptor = new SecurityTokenDescriptor {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.AccessTokenExpirationMinutes),
+            Issuer = _jwtSettings.Issuer,
+            Audience = _jwtSettings.Audience,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
+    }
+
+    internal bool ValidateAccessToken(string token) {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+
+        try {
+            tokenHandler.ValidateToken(token, new TokenValidationParameters {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidIssuer = _jwtSettings.Issuer,
+                ValidAudience = _jwtSettings.Audience,
+                ClockSkew = TimeSpan.Zero
+            }, out _);
+
+            return true;
         }
-
-        // Hash a plain-text password
-        public string HashPassword(string password) {
-            return BCrypt.Net.BCrypt.HashPassword(password);
-        }
-
-        // Verify a plain-text password against a hashed one
-        public bool VerifyPassword(string hashedPassword, string inputPassword) {
-            return BCrypt.Net.BCrypt.Verify(inputPassword, hashedPassword);
-        }
-
-        // Generate JWT token based on a list ID
-        public string GenerateJwtToken(string listId) {
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            byte[] key = Encoding.ASCII.GetBytes(_jwtSecret);
-
-            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor {
-                Subject = new ClaimsIdentity(new[] {
-                    new Claim(ClaimTypes.NameIdentifier, listId)
-                }),
-                Expires = DateTime.UtcNow.Add(_jwtExpiry),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-
-            SecurityToken token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
-        }
-
-        // Validate JWT token and return list ID if valid, null if invalid
-        public string? ValidateJwtToken(string token) {
-            if (token == null) return null;
-
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            byte[] key = Encoding.ASCII.GetBytes(_jwtSecret);
-
-            try {
-                tokenHandler.ValidateToken(token, new TokenValidationParameters {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                }, out SecurityToken validatedToken);
-
-                JwtSecurityToken jwtToken = (JwtSecurityToken)validatedToken;
-                return jwtToken.Claims.First(x => x.Type == "nameid").Value;
-            }
-            catch {
-                return null;
-            }
+        catch {
+            return false;
         }
     }
+
+    internal bool ExtractAccessToken(string? authHeader, out string token) {
+        token = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) {
+            return false;
+        }
+
+        token = authHeader.Substring("Bearer ".Length).Trim();
+        return !string.IsNullOrWhiteSpace(token);
+    }
+
+    public AuthValidationResult ValidateHttpRequest(HttpRequest request) {
+        string? authHeader = request.Headers.Authorization.FirstOrDefault();
+        if (!ExtractAccessToken(authHeader, out string token)) {
+            return new AuthValidationResult(false, "Malformed access token.");
+        }
+
+        if (!ValidateAccessToken(token)) {
+            return new AuthValidationResult(false, "Invalid or expired access token.");
+        }
+
+        return new AuthValidationResult(true, "Access token is valid.");
+    }
 }
+public record AuthValidationResult(bool IsValid, string Message);
