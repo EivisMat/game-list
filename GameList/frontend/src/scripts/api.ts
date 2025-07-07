@@ -8,12 +8,19 @@ export async function createList(
 ) {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+    const formattedBody = {
+        name: body.name,
+        password: body.password,
+        games: (body.games || []).map((g) => ({ name: g })),
+        people: (body.people || []).map((p) => ({ name: p }))
+    }
+
     const response = await fetch(`${backendUrl}/thelist/api/list/create`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(formattedBody),
     });
 
     if (!response.ok) {
@@ -151,7 +158,7 @@ export async function setOwned(
 ) {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}/games/${gameId}/people/${personId}`, {
+    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}/games/${gameId}/owners/${personId}`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -185,7 +192,12 @@ export async function getRandomGame(
         throw new Error(`Failed to get random game: ${response.statusText}`);
     }
 
-    return await response.json();
+    try {
+        return await response.json();
+    }
+    catch {
+        return null;
+    }
 }
 
 export async function addPerson(
@@ -233,4 +245,24 @@ export async function deletePerson(
     }
 
     return await response.json();
+}
+
+export async function deleteList(
+    listId: string,
+    token: string
+) {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+    const response = await fetch(`${backendUrl}/thelist/api/list/${listId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to delete list: ${response.statusText}`);
+    }
+    return true;
 }

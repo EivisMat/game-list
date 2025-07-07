@@ -2,6 +2,17 @@ using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedFrontend = builder.Configuration["AllowedFrontend"];
+
+// Define CORS policy
+builder.Services.AddCors(options => {
+    options.AddPolicy("AllowFrontend", policy => {
+        policy.WithOrigins(allowedFrontend!)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 // Add services to the container.
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
@@ -35,6 +46,8 @@ if (app.Environment.IsDevelopment()) {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowFrontend");
 
 app.UseHttpsRedirection();
 
