@@ -84,20 +84,6 @@ const List = () => {
         setList(updated);
     };
 
-    const handleAddGame = async () => {
-        const name = prompt("Enter game name:");
-        if (!name?.trim()) return;
-        const updated = await addGame(listId!, { name }, token);
-        setList(updated);
-    };
-
-    const handleAddPerson = async () => {
-        const name = prompt("Enter person name:");
-        if (!name?.trim()) return;
-        const updated = await addPerson(listId!, { name }, token);
-        setList(updated);
-    };
-
     const handleDeletePerson = async (personId: string) => {
         const updated = await deletePerson(listId!, personId, token);
         setList(updated);
@@ -136,7 +122,7 @@ const List = () => {
                             <th></th>
                             <th>Added</th>
                             <th>
-                                Game{" "}
+                                Game
                                 {addingGame ? (
                                     <input
                                         type="text"
