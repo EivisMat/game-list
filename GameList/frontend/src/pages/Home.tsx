@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Home.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faX } from '@fortawesome/free-solid-svg-icons';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import { createList, login } from '../scripts/api.ts';
 import {
     addAuthEntry,
@@ -173,7 +173,7 @@ const Home = () => {
                                     window.location.reload();
                                 }}
                                 aria-label={`Remove list ${name}`}>
-                                <FontAwesomeIcon icon={faX} />
+                                <FontAwesomeIcon icon={faXmark} />
                             </button>
                             <button
                                 className="quick-select-btn"

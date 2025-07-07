@@ -56,7 +56,8 @@
 }
 
 .icon-refresh,
-.icon-back {
+.icon-back,
+.icon-add {
     color: #802bb1;
 }
 
@@ -186,7 +187,6 @@
 
 .person-checkbox:checked {
     background-color: #a86aff;
-    /* Your purple accent */
     border-color: #c093ff;
 }
 
