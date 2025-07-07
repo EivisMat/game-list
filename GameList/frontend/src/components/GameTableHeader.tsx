@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faXmark } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
+import '../styles/List.css';
 
 interface Person {
     id: string;
@@ -52,7 +53,7 @@ const GameTableHeader: React.FC<GameTableHeaderProps> = ({
                             }}
                         />
                     ) : (
-                        <button className="icon-button" onClick={() => setAddingGame(true)} title="Add Game">
+                        <button className="icon-button icon-add" onClick={() => setAddingGame(true)} title="Add Game">
                             <FontAwesomeIcon icon={faPlus} />
                         </button>
                     )}
@@ -60,7 +61,7 @@ const GameTableHeader: React.FC<GameTableHeaderProps> = ({
                 {people.map((person) => (
                     <th key={person.id}>
                         <button
-                            className="icon-button"
+                            className="icon-button icon-delete"
                             onClick={() => onDeletePerson(person.id)}
                             title={`Delete ${person.name}`}
                         >
@@ -88,7 +89,7 @@ const GameTableHeader: React.FC<GameTableHeaderProps> = ({
                             }}
                         />
                     ) : (
-                        <button className="icon-button" onClick={() => setAddingPerson(true)} title="Add Person">
+                        <button className="icon-button icon-add" onClick={() => setAddingPerson(true)} title="Add Person">
                             <FontAwesomeIcon icon={faPlus} />
                         </button>
                     )}
